@@ -12,7 +12,6 @@ public class Server extends UnicastRemoteObject implements checkBal {
         critical = false;
         this.serverNo = serverNo;
         try {
-            // token = (TokenInterface) Naming.lookup("Token");
             Registry reg = LocateRegistry.getRegistry("localhost", 8082);
             TokenInterface token = (TokenInterface) reg.lookup("tokenServer");
             this.token = token;
@@ -29,8 +28,6 @@ public class Server extends UnicastRemoteObject implements checkBal {
             add(new Account("345678", "password4", 5000.0));
         }
     };
-    // int serverNo;
-    // Clock clock;
     int RN[];
     boolean critical;
     int no_of_requests;
@@ -38,7 +35,7 @@ public class Server extends UnicastRemoteObject implements checkBal {
     int serverNo;
 
     public double checkBalance(String acc_no, String password) throws RemoteException {
-        System.out.println("Request received for account number " + acc_no);
+        System.out.println("Balance request received for account number " + acc_no);
         for (int i = 0; i < a.size(); i++) {
             double bal = a.get(i).checkBalance(acc_no, password);
             if (bal != -1)
@@ -48,8 +45,8 @@ public class Server extends UnicastRemoteObject implements checkBal {
     }
 
     public boolean transfer(String d_acc_no, String cred_acc_no, String password, double amt) throws RemoteException {
-        System.out.println("Request received for account number " + d_acc_no);
-        System.out.println("Credit account number " + cred_acc_no);
+        System.out.println("Transfer request received for account number " + d_acc_no);
+        System.out.println("Transfer to credit account number " + cred_acc_no);
         boolean isValid = false;
         for (int i = 0; i < a.size(); i++) {
             isValid = a.get(i).checkValid(d_acc_no, password);
@@ -60,7 +57,6 @@ public class Server extends UnicastRemoteObject implements checkBal {
         if (!isValid) {
             return false;
         } else {
-            // Sync clocks ??
             if (token.getOwner() == -1) {
                 token.setOwner(serverNo);
                 System.out.println("No owner");
@@ -76,7 +72,6 @@ public class Server extends UnicastRemoteObject implements checkBal {
             boolean b = critical_section(d_acc_no, cred_acc_no, password, amt);
             critical = false;
             releaseToken();
-            System.out.println("Updated Balance:"+checkBalance(d_acc_no, password));
             return b;
         }
 
@@ -86,7 +81,6 @@ public class Server extends UnicastRemoteObject implements checkBal {
         no_of_requests++;
         for (int i = 0; i < 1; i++) {
             try {
-                // checkBal server = (checkBal) Naming.lookup("server" + i);
                 Registry reg = LocateRegistry.getRegistry("localhost", 8000+i);
                 checkBal server = (checkBal) reg.lookup("bankServer"+i);
                 server.receiveRequest(serverNo, no_of_requests);
@@ -97,18 +91,14 @@ public class Server extends UnicastRemoteObject implements checkBal {
     }
 
     public boolean critical_section(String d_acc_no, String cred_acc_no, String password, double amt) {
-        // Account deb = new Account();
-        // Account cred = new Account();
         int deb_ind = 0;
         int cred_ind = 0;
         for (int i = 0; i < a.size(); i++) {
             if (a.get(i).acc_no.equals(d_acc_no) && a.get(i).password.equals(password)) {
                 deb_ind = i;
-                System.out.println("Got deb ind");
             }
             if (a.get(i).acc_no.equals(cred_acc_no)) {
                 cred_ind = i;
-                System.out.println("Got cred ind");
             }
         }
         if (a.get(deb_ind).balance < amt)
@@ -116,8 +106,6 @@ public class Server extends UnicastRemoteObject implements checkBal {
         else {
             a.get(deb_ind).balance -= amt;
             a.get(cred_ind).balance += amt;
-            System.out.println("Debit acct:"+a.get(deb_ind).balance);
-            System.out.println("Credit acct:"+a.get(cred_ind).balance);
             return true;
         }
     }
@@ -129,7 +117,6 @@ public class Server extends UnicastRemoteObject implements checkBal {
             if (token.getToken()[i] + 1 == RN[i]) {
                 if (token.getOwner() == serverNo) {
                     if (critical) {
-                        // token.queue = i;
                         System.out.println("Add to queue");
                         token.getQueue()[token.getTail()] = i;
                         token.setTail(token.getTail() + 1);
@@ -154,16 +141,16 @@ public class Server extends UnicastRemoteObject implements checkBal {
 
     public static void main(String[] args) {
         try {
-            int no = Integer.parseInt(args[0]);
-            int portNumber = 8000 + no;
-            Registry reg = LocateRegistry.createRegistry(portNumber);
-            reg.rebind("bankServer" + args[0], new Server(no));
-            System.out.println("Server no " + args[0] + " is running..");
-            // a.add(new Account("123456", "password1", 2000.0));
-            // a.add(new Account("456789", "password2", 3000.0));
-            // a.add(new Account("234567", "password3", 4000.0));
-            // a.add(new Account("345678", "password4", 5000.0));
-            System.out.println("no of acc:"+a.size());
+            Registry reg = LocateRegistry.createRegistry(8000);
+            reg.rebind("bankServer0", new Server(0));
+
+            Registry reg1 = LocateRegistry.createRegistry(8001);
+            reg1.rebind("bankServer1", new Server(1));
+
+            Registry reg2 = LocateRegistry.createRegistry(8002);
+            reg2.rebind("bankServer2", new Server(2));
+
+            System.out.println("3 servers are running now ");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -179,13 +166,6 @@ class Account {
         this.acc_no = acc_no;
         this.password = password;
         this.balance = balance;
-    }
-
-    Account()
-    {
-        this.acc_no = "";
-        this.password = "";
-        this.balance = 0.0;
     }
 
     public double checkBalance(String acc_no, String password) {

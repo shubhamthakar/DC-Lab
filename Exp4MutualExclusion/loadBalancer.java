@@ -39,11 +39,8 @@ public class loadBalancer extends UnicastRemoteObject implements loadBalancerInt
         loadBalancer token = new loadBalancer();
         try{
             String objPath = "loadBalancer"; //name of server location
-            // TokenInterface stub = (TokenInterface)
             Registry reg = LocateRegistry.createRegistry(8081);
             reg.rebind(objPath, new loadBalancer());
-            // UnicastRemoteObject.exportObject(token,0);
-            // Naming.bind(objPath, token); //binding to name on rmiregistry
             System.out.println("Load balancing server is running now.");
         }
         catch(Exception e){
