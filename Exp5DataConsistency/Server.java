@@ -9,6 +9,7 @@ public class Server extends UnicastRemoteObject implements checkBal {
         super();
         RN = new int[3];
         no_of_requests = 0;
+        exec=1;
         critical = false;
         this.serverNo = serverNo;
         try {
@@ -41,7 +42,7 @@ public class Server extends UnicastRemoteObject implements checkBal {
     };
 
 
-    int RN[];
+    int RN[],exec;
     boolean critical;
     int no_of_requests;
     TokenInterface token;
@@ -50,7 +51,9 @@ public class Server extends UnicastRemoteObject implements checkBal {
     public double checkBalance(String acc_no, String password) throws RemoteException {
 
         try{
-
+            if(exec==1){
+            throw new Exception("Datastore not accessible");
+            }
             System.out.println("Balance request received for account number " + acc_no);
             for (int i = 0; i < a.size(); i++) {
                 double bal = a.get(i).checkBalance(acc_no, password);
@@ -61,7 +64,7 @@ public class Server extends UnicastRemoteObject implements checkBal {
         }
         catch(Exception e){
 
-            System.out.println(e+"\nCannot access datastore 1\nTrying to access datastore 2");
+            System.out.println(e.getMessage()+"\nCannot access datastore 1\nTrying to access datastore 2");
             
             for (int i = 0; i < b.size(); i++) {
                 double bal = b.get(i).checkBalance(acc_no, password);
@@ -81,6 +84,9 @@ public class Server extends UnicastRemoteObject implements checkBal {
         boolean isValid = false;
 
         try{
+            if(exec==1){
+                throw new Exception("Datastore not accessible");
+                }
             for (int i = 0; i < a.size(); i++) {
                 isValid = a.get(i).checkValid(d_acc_no, password);
                 if (isValid) {
@@ -90,9 +96,9 @@ public class Server extends UnicastRemoteObject implements checkBal {
 
         }
         catch(Exception e){
-            System.out.println(e+"\nCannot access datastore 1\nTrying to access datastore 2");
-            for (int i = 0; i < a.size(); i++) {
-                isValid = a.get(i).checkValid(d_acc_no, password);
+            System.out.println(e.getMessage()+"\nCannot access datastore 1\nTrying to access datastore 2");
+            for (int i = 0; i < b.size(); i++) {
+                isValid = b.get(i).checkValid(d_acc_no, password);
                 if (isValid) {
                     break;
                 }
@@ -125,7 +131,7 @@ public class Server extends UnicastRemoteObject implements checkBal {
 
     public void sendRequest() throws RemoteException {
         no_of_requests++;
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 3; i++) {
             try {
                 Registry reg = LocateRegistry.getRegistry("localhost", 8000+i);
                 checkBal server = (checkBal) reg.lookup("bankServer"+i);
@@ -139,20 +145,45 @@ public class Server extends UnicastRemoteObject implements checkBal {
     public boolean critical_section(String d_acc_no, String cred_acc_no, String password, double amt) {
         int deb_ind = 0;
         int cred_ind = 0;
-        for (int i = 0; i < a.size(); i++) {
-            if (a.get(i).acc_no.equals(d_acc_no) && a.get(i).password.equals(password)) {
-                deb_ind = i;
+        try{
+            if(exec==1){
+                throw new Exception("Datastore not accessible");
+                }
+            for (int i = 0; i < a.size(); i++) {
+                if (a.get(i).acc_no.equals(d_acc_no) && a.get(i).password.equals(password)) {
+                    deb_ind = i;
+                }
+                if (a.get(i).acc_no.equals(cred_acc_no)) {
+                    cred_ind = i;
+                }
             }
-            if (a.get(i).acc_no.equals(cred_acc_no)) {
-                cred_ind = i;
+            if (a.get(deb_ind).balance < amt)
+                return false;
+            else {
+                a.get(deb_ind).balance -= amt;
+                a.get(cred_ind).balance += amt;
+                b.get(deb_ind).balance -= amt;
+                b.get(cred_ind).balance += amt;
+                return true;
             }
         }
-        if (a.get(deb_ind).balance < amt)
-            return false;
-        else {
-            a.get(deb_ind).balance -= amt;
-            a.get(cred_ind).balance += amt;
-            return true;
+        catch(Exception e){
+            System.out.println(e.getMessage()+"\nCannot access datastore 1\nTrying to access datastore 2");
+            for (int i = 0; i < b.size(); i++) {
+                if (b.get(i).acc_no.equals(d_acc_no) && b.get(i).password.equals(password)) {
+                    deb_ind = i;
+                }
+                if (b.get(i).acc_no.equals(cred_acc_no)) {
+                    cred_ind = i;
+                }
+            }
+            if (b.get(deb_ind).balance < amt)
+                return false;
+            else {
+                b.get(deb_ind).balance -= amt;
+                b.get(cred_ind).balance += amt;
+                return true;
+            }
         }
     }
 
