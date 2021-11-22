@@ -27,6 +27,17 @@ public class Server extends UnicastRemoteObject implements checkBal {
             add(new Account("234567", "password3", 4000.0));
             add(new Account("345678", "password4", 5000.0));
         }
+    
+    };
+
+    static ArrayList<Account> b = new ArrayList<Account>() {
+        {
+            add(new Account("123456", "password1", 2000.0));
+            add(new Account("456789", "password2", 3000.0));
+            add(new Account("234567", "password3", 4000.0));
+            add(new Account("345678", "password4", 5000.0));
+        }
+    
     };
 
 
@@ -37,25 +48,58 @@ public class Server extends UnicastRemoteObject implements checkBal {
     int serverNo;
 
     public double checkBalance(String acc_no, String password) throws RemoteException {
-        System.out.println("Balance request received for account number " + acc_no);
-        for (int i = 0; i < a.size(); i++) {
-            double bal = a.get(i).checkBalance(acc_no, password);
-            if (bal != -1)
-                return bal;
+
+        try{
+
+            System.out.println("Balance request received for account number " + acc_no);
+            for (int i = 0; i < a.size(); i++) {
+                double bal = a.get(i).checkBalance(acc_no, password);
+                if (bal != -1)
+                    return bal;
+            }
+            return -1.0;
         }
-        return -1.0;
+        catch(Exception e){
+
+            System.out.println(e+"\nCannot access datastore 1\nTrying to access datastore 2");
+            
+            for (int i = 0; i < b.size(); i++) {
+                double bal = b.get(i).checkBalance(acc_no, password);
+                if (bal != -1)
+                    return bal;
+            }
+            return -1.0;
+
+
+        }
+        
     }
 
     public boolean transfer(String d_acc_no, String cred_acc_no, String password, double amt) throws RemoteException {
         System.out.println("Transfer request received for account number " + d_acc_no);
         System.out.println("Transfer to credit account number " + cred_acc_no);
         boolean isValid = false;
-        for (int i = 0; i < a.size(); i++) {
-            isValid = a.get(i).checkValid(d_acc_no, password);
-            if (isValid) {
-                break;
+
+        try{
+            for (int i = 0; i < a.size(); i++) {
+                isValid = a.get(i).checkValid(d_acc_no, password);
+                if (isValid) {
+                    break;
+                }
             }
+
         }
+        catch(Exception e){
+            System.out.println(e+"\nCannot access datastore 1\nTrying to access datastore 2");
+            for (int i = 0; i < a.size(); i++) {
+                isValid = a.get(i).checkValid(d_acc_no, password);
+                if (isValid) {
+                    break;
+                }
+            }
+
+        }
+        
         if (!isValid) {
             return false;
         } else {
