@@ -64,7 +64,7 @@ public class Server extends UnicastRemoteObject implements checkBal {
         }
         catch(Exception e){
 
-            System.out.println(e.getMessage()+"\nCannot access datastore 1\nTrying to access datastore 2");
+            System.out.println(e.getMessage()+"\nCannot access datastore 1\nTrying to access backup datastore");
             
             for (int i = 0; i < b.size(); i++) {
                 double bal = b.get(i).checkBalance(acc_no, password);
@@ -96,7 +96,7 @@ public class Server extends UnicastRemoteObject implements checkBal {
 
         }
         catch(Exception e){
-            System.out.println(e.getMessage()+"\nCannot access datastore 1\nTrying to access datastore 2");
+            // System.out.println(e.getMessage()+"\nCannot access datastore 1\nTrying to access datastore 2");
             for (int i = 0; i < b.size(); i++) {
                 isValid = b.get(i).checkValid(d_acc_no, password);
                 if (isValid) {
@@ -168,7 +168,7 @@ public class Server extends UnicastRemoteObject implements checkBal {
             }
         }
         catch(Exception e){
-            System.out.println(e.getMessage()+"\nCannot access datastore 1\nTrying to access datastore 2");
+            System.out.println(e.getMessage()+"\nCannot access datastore 1\nTrying to access backup datastore");
             for (int i = 0; i < b.size(); i++) {
                 if (b.get(i).acc_no.equals(d_acc_no) && b.get(i).password.equals(password)) {
                     deb_ind = i;
